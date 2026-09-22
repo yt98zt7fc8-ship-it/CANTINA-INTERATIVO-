@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cantina Interativo</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f7fb;color:#222;overflow-x:hidden}
+button{font-family:inherit;cursor:pointer}
+.capa{min-height:320px;padding:30px 20px;display:flex;align-items:center;justify-content:center;text-align:center;position:relative;background:linear-gradient(135deg,#0066cc,#00a8ff);background-size:cover;background-position:center}
+.capa::before{content:"";position:absolute;inset:0;background:rgba(0,40,100,.25)}
+.capa-conteudo{position:relative;z-index:2;color:white}
+.capa h1{margin:0 0 12px;font-size:34px;font-weight:900;text-shadow:0 2px 5px rgba(0,0,0,.35)}
+.capa p{margin:0 0 22px;font-size:17px}
+.botao-cardapio{border:0;background:white;color:#0066cc;padding:14px 25px;border-radius:30px;font-size:17px;font-weight:bold}
+.container{max-width:900px;margin:auto;padding:20px 14px 100px}
+.observacao{background:#fff3cd;border:1px solid #ffe08a;color:#735400;padding:14px;border-radius:12px;text-align:center;font-weight:bold;margin-bottom:20px}
+.categoria{margin-top:25px;margin-bottom:12px;font-size:22px;font-weight:900;color:#005bbb}
+.produtos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.produto{background:white;border-radius:15px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.10)}
+.produto-imagem{width:100%;height:135px;background:#eaf3ff;display:flex;align-items:center;justify-content:center;font-size:55px;overflow:hidden}
+.produto-imagem img{width:100%;height:100%;object-fit:cover}
+.produto-info{padding:12px}.produto-nome{font-size:16px;font-weight:bold;min-height:40px}
+.preco{margin-top:7px;font-size:17px;font-weight:bold;color:#0066cc}
+.preco-indisponivel{color:#888;font-size:13px;margin-top:7px}
+.controle{display:flex;align-items:center;justify-content:space-between;margin-top:12px;gap:5px}
+.controle button{border:0;width:35px;height:35px;border-radius:9px;background:#0066cc;color:white;font-size:21px;font-weight:bold}
+.controle button:disabled{background:#ccc;cursor:not-allowed}
+.quantidade{min-width:25px;text-align:center;font-weight:bold}
+.botao-carrinho{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:50;border:0;background:#005bbb;color:white;padding:15px 24px;border-radius:30px;font-size:16px;font-weight:bold;box-shadow:0 4px 15px rgba(0,0,0,.3)}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;padding:20px;align-items:center;justify-content:center}
+.modal-caixa{width:100%;max-width:520px;max-height:90vh;overflow-y:auto;background:white;border-radius:18px;padding:20px}
+.modal-titulo{margin-top:0;font-size:24px}
+.item-carrinho{border-bottom:1px solid #ddd;padding:12px 0}
+.item-cabecalho{display:flex;justify-content:space-between;gap:10px;font-weight:bold}
+.item-controle{display:flex;align-items:center;gap:8px;margin-top:8px}
+.item-controle button{border:0;background:#0066cc;color:white;width:32px;height:32px;border-radius:8px;font-weight:bold;font-size:18px}
+.total{font-size:21px;font-weight:900;margin:18px 0}
+.botao-principal,.botao-whatsapp,.botao-secundario{width:100%;border:0;padding:14px;border-radius:10px;font-size:16px;font-weight:bold;margin-top:8px}
+.botao-principal{background:#0066cc;color:white}.botao-whatsapp{background:#25d366;color:white}.botao-secundario{background:#ddd;color:#222}
+input,select{width:100%;padding:12px;border:1px solid #ccc;border-radius:9px;margin:6px 0 12px;font-size:16px}
+.admin-lista{display:flex;flex-direction:column;gap:10px}
+.admin-item{border:1px solid #ddd;padding:12px;border-radius:12px;background:#fafafa}
+.admin-item strong{display:block;margin-bottom:8px}
+.admin-botoes{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+.admin-botoes button{border:0;padding:9px;border-radius:8px;font-weight:bold}
+.btn-editar{background:#ffca28}.btn-status{background:#ddd}.btn-excluir{background:#ff4d4d;color:white}
+.admin-secao{margin-top:20px;padding-top:15px;border-top:1px solid #ddd}.admin-secao h3{margin-top:0}
+.file-input{padding:8px;background:#f5f5f5}.vazio{text-align:center;color:#777;padding:20px}
+.admin-abrir{position:fixed;right:12px;bottom:18px;z-index:49;border:0;background:#333;color:white;width:42px;height:42px;border-radius:50%;font-size:18px;opacity:.45}
+@media(max-width:480px){.capa{min-height:290px}.capa h1{font-size:29px}.produto-imagem{height:120px}.produto-nome{font-size:14px}.preco{font-size:15px}}
+</style>
+</head>
+<body>
+
+<section class="capa" id="capa">
+<div class="capa-conteudo">
+<h1 id="tituloCapa">CANTINA INTERATIVO</h1>
+<p>Escolha seus produtos e faça seu pedido</p>
+<button class="botao-cardapio" onclick="irParaCardapio()">VER CARDÁPIO</button>
+</div>
+</section>
+
+<main class="container" id="cardapio">
+<div class="observacao">⚠️ CONSULTAR DISPONIBILIDADE DOS ITENS</div>
+<h2 class="categoria">🥐 SALGADOS</h2><div class="produtos" id="listaSalgados"></div>
+<h2 class="categoria">🍰 DOCES</h2><div class="produtos" id="listaDoces"></div>
+<h2 class="categoria">🥤 BEBIDAS</h2><div class="produtos" id="listaBebidas"></div>
+</main>
+
+<button class="botao-carrinho" onclick="abrirCarrinho()">🛒 Carrinho (<span id="quantidadeCarrinho">0</span>)</button>
+<button class="admin-abrir" onclick="abrirLogin()">⚙️</button>
+
+<div class="modal" id="modalCarrinho"><div class="modal-caixa">
+<h2 class="modal-titulo">🛒 Seu pedido</h2>
+<div id="listaCarrinho"></div>
+<div class="total">Total: R$ <span id="totalCarrinho">0,00</span></div>
+<button class="botao-principal" onclick="confirmarPedido()">CONFIRMAR PEDIDO</button>
+<button class="botao-secundario" onclick="fecharCarrinho()">VOLTAR</button>
+</div></div>
+
+<div class="modal" id="modalConfirmacao"><div class="modal-caixa">
+<h2 class="modal-titulo">✅ Confirmar pedido</h2>
+<p>Confira seu pedido antes de enviar:</p>
+<div id="resumoConfirmacao"></div>
+<div class="total">Total: R$ <span id="totalConfirmacao">0,00</span></div>
+<button class="botao-whatsapp" onclick="enviarWhatsApp()">📲 ENVIAR PEDIDO PELO WHATSAPP</button>
+<button class="botao-secundario" onclick="fecharConfirmacao()">VOLTAR</button>
+</div></div>
+
+<div class="modal" id="modalLogin"><div class="modal-caixa">
+<h2 class="modal-titulo">🔐 Área administrativa</h2>
+<input type="password" id="senhaLogin" placeholder="Digite a senha">
+<button class="botao-principal" onclick="entrarAdmin()">ENTRAR</button>
+<button class="botao-secundario" onclick="fecharLogin()">CANCELAR</button>
+</div></div>
+
+<div class="modal" id="modalAdmin"><div class="modal-caixa">
+<h2 class="modal-titulo">⚙️ Administração</h2>
+
+<div class="admin-secao">
+<h3>➕ Adicionar produto</h3>
+<input id="novoNome" placeholder="Nome do produto">
+<input id="novoPreco" type="number" step="0.01" placeholder="Preço">
+<select id="novaCategoria">
+<option value="salgados">Salgados</option><option value="doces">Doces</option><option value="bebidas">Bebidas</option>
+</select>
+<input id="novaImagem" class="file-input" type="file" accept="image/*">
+<button class="botao-principal" onclick="finalizarAdicao()">ADICIONAR PRODUTO</button>
+</div>
+
+<div class="admin-secao"><h3>📋 Produtos</h3><div class="admin-lista" id="listaAdmin"></div></div>
+
+<div class="admin-secao">
+<h3>🏪 Nome da cantina</h3>
+<input id="novoTitulo" placeholder="Nome da cantina">
+<button class="botao-principal" onclick="salvarTitulo()">SALVAR NOME</button>
+</div>
+
+<div class="admin-secao">
+<h3>🖼️ Foto da capa</h3>
+<input id="arquivoCapa" class="file-input" type="file" accept="image/*">
+<button class="botao-principal" onclick="trocarCapa()">ALTERAR CAPA</button>
+</div>
+
+<div class="admin-secao">
+<h3>🔑 Alterar senha</h3>
+<input id="novaSenha" type="password" placeholder="Nova senha">
+<button class="botao-principal" onclick="alterarSenha()">ALTERAR SENHA</button>
+</div>
+
+<button class="botao-secundario" onclick="fecharAdmin()">FECHAR ADMINISTRAÇÃO</button>
+</div></div>
+
+<script>
+const NUMERO_WHATSAPP="5571996490376";
+
+const produtosIniciais=[
+{id:"pizza",nome:"Pizza",preco:"",imagem:"🍕",categoria:"salgados",ativo:true},
+{id:"hamburguer-forno",nome:"Hambúrguer de forno",preco:"",imagem:"🍔",categoria:"salgados",ativo:true},
+{id:"enroladinho-salsicha",nome:"Enroladinho de salsicha",preco:"",imagem:"🌭",categoria:"salgados",ativo:true},
+{id:"pastel-frango-forno",nome:"Pastel de forno de frango",preco:"",imagem:"🥟",categoria:"salgados",ativo:true},
+{id:"bauru",nome:"Bauru de queijo e presunto",preco:"",imagem:"🥪",categoria:"salgados",ativo:true},
+{id:"coxinha-carne",nome:"Coxinha de carne",preco:"",imagem:"🍗",categoria:"salgados",ativo:true},
+{id:"pastel-queijo-presunto",nome:"Pastel de queijo e presunto",preco:"",imagem:"🥟",categoria:"salgados",ativo:true},
+{id:"pastel-frango",nome:"Pastel de frango",preco:"",imagem:"🥟",categoria:"salgados",ativo:true},
+{id:"empada-salgada",nome:"Empada salgada",preco:"",imagem:"🥧",categoria:"salgados",ativo:true},
+{id:"cachorro-quente",nome:"Cachorro-quente",preco:"",imagem:"🌭",categoria:"salgados",ativo:true},
+{id:"enroladinho-queijo-presunto",nome:"Enroladinho de queijo e presunto",preco:"",imagem:"🥐",categoria:"salgados",ativo:true},
+{id:"empada-doce",nome:"Empada doce",preco:"",imagem:"🥧",categoria:"doces",ativo:true},
+{id:"bolo-cenoura",nome:"Bolo de cenoura com cobertura de chocolate",preco:"",imagem:"🍰",categoria:"doces",ativo:true},
+{id:"bolo-chocolate",nome:"Bolo de chocolate",preco:"",imagem:"🍫",categoria:"doces",ativo:true},
+{id:"acai",nome:"Açaí",preco:"",imagem:"🍧",categoria:"doces",ativo:true},
+{id:"refri-goob",nome:"Refri Goob",preco:"2.50",imagem:"🥤",categoria:"bebidas",ativo:true},
+{id:"refri-lata",nome:"Refri lata",preco:"6.00",imagem:"🥤",categoria:"bebidas",ativo:true},
+{id:"suco-yulo",nome:"Suco Yulo",preco:"2.50",imagem:"🧃",categoria:"bebidas",ativo:true},
+{id:"suco-marata",nome:"Suco Maratá",preco:"2.50",imagem:"🧃",categoria:"bebidas",ativo:true}
+];
+
+function lerJSON(chave,valorPadrao){
+try{const x=localStorage.getItem(chave);return x?JSON.parse(x):valorPadrao}catch(e){localStorage.removeItem(chave);return valorPadrao}
+}
+let produtos=lerJSON("cantinaProdutos",produtosIniciais);
+let carrinho=lerJSON("cantinaCarrinho",[]);
+let titulo=localStorage.getItem("cantinaTitulo")||"CANTINA INTERATIVO";
+let senha=localStorage.getItem("cantinaSenha")||"1234";
+let capa=localStorage.getItem("cantinaCapa")||"";
+
+function dinheiro(valor){if(valor===""||valor===null||isNaN(Number(valor)))return"0,00";return Number(valor).toFixed(2).replace(".",",")}
+function salvarProdutos(){localStorage.setItem("cantinaProdutos",JSON.stringify(produtos))}
+function salvarCarrinho(){localStorage.setItem("cantinaCarrinho",JSON.stringify(carrinho))}
+function obterQuantidade(id){const item=carrinho.find(x=>x.id===id);return item?item.quantidade:0}
+
+function mostrarProdutos(){
+const listas={salgados:document.getElementById("listaSalgados"),doces:document.getElementById("listaDoces"),bebidas:document.getElementById("listaBebidas")};
+Object.values(listas).forEach(x=>x.innerHTML="");
+produtos.filter(p=>p.ativo).forEach(produto=>{
+const card=document.createElement("div");card.className="produto";
+let imagemHTML=produto.imagem&&produto.imagem.startsWith("data:image")?`<img src="${produto.imagem}" alt="${produto.nome}">`:`<span>${produto.imagem||"🍽️"}</span>`;
+const temPreco=produto.preco!==""&&Number(produto.preco)>0;
+card.innerHTML=`<div class="produto-imagem">${imagemHTML}</div><div class="produto-info"><div class="produto-nome">${produto.nome}</div>${temPreco?`<div class="preco">R$ ${dinheiro(produto.preco)}</div>`:`<div class="preco-indisponivel">Preço não definido</div>`}<div class="controle"><button onclick="alterarQuantidade('${produto.id}',-1)" ${!temPreco?"disabled":""}>−</button><span class="quantidade">${obterQuantidade(produto.id)}</span><button onclick="alterarQuantidade('${produto.id}',1)" ${!temPreco?"disabled":""}>+</button></div></div>`;
+listas[produto.categoria].appendChild(card);
+});
+}
+
+function alterarQuantidade(id,alteracao){
+const produto=produtos.find(p=>p.id===id);if(!produto||!produto.preco||Number(produto.preco)<=0)return;
+let item=carrinho.find(x=>x.id===id);
+if(!item&&alteracao>0)carrinho.push({id:id,quantidade:1});
+else if(item){item.quantidade+=alteracao;if(item.quantidade<=0)carrinho=carrinho.filter(i=>i.id!==id)}
+salvarCarrinho();mostrarProdutos();atualizarCarrinho()
+}
+function atualizarCarrinho(){document.getElementById("quantidadeCarrinho").innerText=carrinho.reduce((t,i)=>t+i.quantidade,0)}
+function calcularTotal(){return carrinho.reduce((total,item)=>{const p=produtos.find(x=>x.id===item.id);return p?total+Number(p.preco)*item.quantidade:total},0)}
+function abrirCarrinho(){mostrarCarrinho();document.getElementById("modalCarrinho").style.display="flex"}
+function fecharCarrinho(){document.getElementById("modalCarrinho").style.display="none"}
+
+function mostrarCarrinho(){
+const lista=document.getElementById("listaCarrinho");lista.innerHTML="";
+if(!carrinho.length)lista.innerHTML='<div class="vazio">Seu carrinho está vazio.</div>';
+else carrinho.forEach(item=>{const p=produtos.find(x=>x.id===item.id);if(!p)return;const subtotal=Number(p.preco)*item.quantidade;const div=document.createElement("div");div.className="item-carrinho";div.innerHTML=`<div class="item-cabecalho"><span>${p.nome}</span><span>R$ ${dinheiro(subtotal)}</span></div><div class="item-controle"><button onclick="alterarQuantidade('${p.id}',-1);mostrarCarrinho()">−</button><strong>${item.quantidade}</strong><button onclick="alterarQuantidade('${p.id}',1);mostrarCarrinho()">+</button></div>`;lista.appendChild(div)});
+document.getElementById("totalCarrinho").innerText=dinheiro(calcularTotal())
+}
+
+function confirmarPedido(){
+if(!carrinho.length){alert("Adicione pelo menos um item ao carrinho.");return}
+const resumo=document.getElementById("resumoConfirmacao");resumo.innerHTML="";
+carrinho.forEach(item=>{const p=produtos.find(x=>x.id===item.id);if(!p)return;const div=document.createElement("div");div.className="item-carrinho";div.innerHTML=`<strong>${item.quantidade}x ${p.nome}</strong><br>R$ ${dinheiro(Number(p.preco)*item.quantidade)}`;resumo.appendChild(div)});
+document.getElementById("totalConfirmacao").innerText=dinheiro(calcularTotal());fecharCarrinho();document.getElementById("modalConfirmacao").style.display="flex"
+}
+function fecharConfirmacao(){document.getElementById("modalConfirmacao").style.display="none"}
+function enviarWhatsApp(){
+let mensagem="🛒 *NOVO PEDIDO - CANTINA INTERATIVO*%0A%0A";
+carrinho.forEach(item=>{const p=produtos.find(x=>x.id===item.id);if(p)mensagem+=`▪️ ${item.quantidade}x ${p.nome} - R$ ${dinheiro(Number(p.preco)*item.quantidade)}%0A`});
+mensagem+=`%0A💰 *TOTAL: R$ ${dinheiro(calcularTotal())}*%0A%0A📲 Pedido realizado pelo cardápio digital.`;
+window.open(`https://wa.me/${NUMERO_WHATSAPP}?text=${mensagem}`,"_blank")
+}
+function irParaCardapio(){document.getElementById("cardapio").scrollIntoView({behavior:"smooth"})}
+
+function abrirLogin(){document.getElementById("modalLogin").style.display="flex";document.getElementById("senhaLogin").focus()}
+function fecharLogin(){document.getElementById("modalLogin").style.display="none"}
+function entrarAdmin(){if(document.getElementById("senhaLogin").value===senha){fecharLogin();mostrarAdmin();document.getElementById("modalAdmin").style.display="flex"}else alert("Senha incorreta.")}
+function fecharAdmin(){document.getElementById("modalAdmin").style.display="none"}
+
+function mostrarAdmin(){
+const lista=document.getElementById("listaAdmin");lista.innerHTML="";
+produtos.forEach(produto=>{const div=document.createElement("div");div.className="admin-item";div.innerHTML=`<strong>${produto.nome}</strong><div>Categoria: ${produto.categoria}</div><div>Preço: ${produto.preco?"R$ "+dinheiro(produto.preco):"Não definido"}</div><div>Status: ${produto.ativo?"ATIVO":"DESATIVADO"}</div><div class="admin-botoes"><button class="btn-editar" onclick="editarProduto('${produto.id}')">EDITAR</button><button class="btn-status" onclick="alterarStatus('${produto.id}')">${produto.ativo?"DESATIVAR":"ATIVAR"}</button><button class="btn-excluir" onclick="excluirProduto('${produto.id}')">EXCLUIR</button><button class="btn-status" onclick="trocarFoto('${produto.id}')">📷 FOTO</button></div>`;lista.appendChild(div)})
+}
+
+function editarProduto(id){
+const p=produtos.find(x=>x.id===id);if(!p)return;
+const nome=prompt("Nome do produto:",p.nome);if(nome===null)return;
+const preco=prompt("Preço do produto:",p.preco||"");if(preco===null)return;
+p.nome=nome.trim()||p.nome;p.preco=preco.replace(",",".").trim();salvarProdutos();mostrarProdutos();mostrarAdmin()
+}
+function alterarStatus(id){const p=produtos.find(x=>x.id===id);if(!p)return;p.ativo=!p.ativo;salvarProdutos();mostrarProdutos();mostrarAdmin()}
+function excluirProduto(id){
+const p=produtos.find(x=>x.id===id);if(!p)return;
+if(!confirm(`Excluir "${p.nome}"?`))return;
+produtos=produtos.filter(x=>x.id!==id);carrinho=carrinho.filter(x=>x.id!==id);salvarProdutos();salvarCarrinho();mostrarProdutos();atualizarCarrinho();mostrarAdmin()
+}
+function adicionarProduto(){document.getElementById("novoNome").value="";document.getElementById("novoPreco").value="";document.getElementById("novaImagem").value=""}
+function finalizarAdicao(){
+const nome=document.getElementById("novoNome").value.trim(),preco=document.getElementById("novoPreco").value.trim(),categoria=document.getElementById("novaCategoria").value,arquivo=document.getElementById("novaImagem").files[0];
+if(!nome){alert("Digite o nome do produto.");return}
+const id=Date.now().toString();
+const adicionar=imagem=>{produtos.push({id,nome,preco,imagem,categoria,ativo:true});salvarProdutos();mostrarProdutos();mostrarAdmin();adicionarProduto()};
+if(arquivo){const leitor=new FileReader();leitor.onload=()=>adicionar(leitor.result);leitor.readAsDataURL(arquivo)}else adicionar("🍽️")
+}
+function trocarFoto(id){
+const input=document.createElement("input");input.type="file";input.accept="image/*";input.onchange=()=>{const arquivo=input.files[0];if(!arquivo)return;const leitor=new FileReader();leitor.onload=()=>{const p=produtos.find(x=>x.id===id);if(!p)return;p.imagem=leitor.result;salvarProdutos();mostrarProdutos();mostrarAdmin()};leitor.readAsDataURL(arquivo)};input.click()
+}
+function salvarTitulo(){
+const novo=document.getElementById("novoTitulo").value.trim();if(!novo){alert("Digite o nome da cantina.");return}
+titulo=novo;localStorage.setItem("cantinaTitulo",titulo);document.getElementById("tituloCapa").innerText=titulo;alert("Nome atualizado!")
+}
+function trocarCapa(){
+const arquivo=document.getElementById("arquivoCapa").files[0];if(!arquivo){alert("Escolha uma imagem.");return}
+const leitor=new FileReader();leitor.onload=()=>{capa=leitor.result;localStorage.setItem("cantinaCapa",capa);aplicarCapa();alert("Capa atualizada!")};leitor.readAsDataURL(arquivo)
+}
+function aplicarCapa(){document.getElementById("capa").style.backgroundImage=capa?`url("${capa}")`:"linear-gradient(135deg,#0066cc,#00a8ff)"}
+function alterarSenha(){
+const nova=document.getElementById("novaSenha").value.trim();if(!nova){alert("Digite uma nova senha.");return}
+senha=nova;localStorage.setItem("cantinaSenha",senha);document.getElementById("novaSenha").value="";alert("Senha alterada com sucesso!")
+}
+
+document.getElementById("tituloCapa").innerText=titulo;
+aplicarCapa();
+mostrarProdutos();
+atualizarCarrinho();
+</script>
+</body>
+</html>
